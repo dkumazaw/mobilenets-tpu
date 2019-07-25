@@ -139,9 +139,7 @@ class V3Block(object):
         
         # Identity op
         if self._block_args.id_skip:
-            if all(
-                s == 1 for s in self._block_args.strides
-            ) and self._block_args.input_filters == self._block_args.output_filters:
+            if (self._block_args.strides == 1) and self._block_args.input_filters == self._block_args.output_filters:
                 x = tf.add(x, inputs)
         tf.logging.info('Project: %s shape: %s' % (x.name, x.shape))
         return x
@@ -233,7 +231,8 @@ class MobileNetV3Small(tf.keras.Model):
             momentum=batch_norm_momentum,
             epsilon=batch_norm_epsilon,
             fused=True)
-        self._avg_pooling = tf.keras.layers.GlobalAveragePooling2D(
+        self._avg_pooling = tf.keras.layers.AveragePooling2D(
+            pool_size=[7, 7],
             data_format=self._global_params.data_format)
         self._conv_head = tf.keras.layers.Conv2D(
             filters=1280,
@@ -289,6 +288,6 @@ class MobileNetV3Small(tf.keras.Model):
             outputs = hardSwish(self._conv_head(outputs))
             if self._dropout:
                 outputs = self._dropout(outputs, training=training)
-            outputs = self._final(outputs)
+            outputs = tf.reshape(self._final(outputs), [-1, self._global_params.num_classes])
             self.endpoints['head'] = outputs
         return outputs

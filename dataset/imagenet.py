@@ -21,7 +21,7 @@ import os
 
 import tensorflow as tf
 
-import preprocessing
+from . import preprocessing
 
 
 def image_serving_input_fn():

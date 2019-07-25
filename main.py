@@ -563,7 +563,10 @@ def main(argv=None):
     # Parse args
     unparsed = flags.FLAGS(sys.argv, known_only=True)
 
-    tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver()
+    tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
+            FLAGS.tpu if (FLAGS.tpu or FLAGS.use_tpu) else '',
+            zone=FLAGS.tpu_zone,
+            project=FLAGS.gcp_project)
 
     if FLAGS.use_async_checkpointing:
         save_checkpoints_steps = None

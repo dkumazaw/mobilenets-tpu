@@ -1,7 +1,6 @@
 import json
 import logging
 
-from google.cloud import storage
 import numpy as np
 import tensorflow as tf
 

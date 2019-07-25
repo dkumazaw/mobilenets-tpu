@@ -29,13 +29,13 @@ def build_model(images, model_name, training, override_params=None):
     """
     assert isinstance(images, tf.Tensor)
 
-    global_params = EvalGlobalParams(
+    global_params = GlobalParams(
         batch_norm_momentum=0.99,
         batch_norm_epsilon=1e-3,
         dropout_rate=0.2,
         data_format='channels_last',
         num_classes=1000,
-        depth_multiplier=depth_multiplier,
+        depth_multiplier=None,
         depth_divisor=8,
         min_depth=None)
 
