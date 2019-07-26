@@ -291,3 +291,154 @@ class MobileNetV3Small(tf.keras.Model):
             outputs = tf.reshape(self._final(outputs), [-1, self._global_params.num_classes])
             self.endpoints['head'] = outputs
         return outputs
+
+class MobileNetV3Large(tf.keras.Model):
+    """Implements tf.keras.Model for MobileNetV3Large."""
+
+    def __init__(self, global_params=None):
+        """
+        Args:
+            lobal_params: GlobalParams, a set of global parameters.
+        Raises:
+            ValueError: when blocks_args is not specified as a list.
+        """
+        super().__init__()
+        self._blocks_args = \
+            [BlockArgs(3, 1,  16,  16,  16, True, 1, None, 'RE'),
+             BlockArgs(3, 1,  16,  64,  24, True, 2, None, 'RE'),
+             BlockArgs(3, 1,  24,  72,  24, True, 1, None, 'RE'),
+             BlockArgs(5, 1,  24,  72,  40, True, 2, 0.25, 'RE'),
+             BlockArgs(5, 1,  40, 120,  40, True, 1, 0.25, 'RE'),
+             BlockArgs(5, 1,  40, 120,  40, True, 1, 0.25, 'RE'),
+             BlockArgs(3, 1,  40, 240,  80, True, 2, None, 'HS'),
+             BlockArgs(3, 1,  80, 200,  80, True, 1, None, 'HS'),
+             BlockArgs(3, 1,  80, 184,  80, True, 1, None, 'HS'),
+             BlockArgs(3, 1,  80, 184,  80, True, 1, None, 'HS'),
+             BlockArgs(3, 1,  80, 480, 112, True, 1, 0.25, 'HS'),
+             BlockArgs(3, 1, 112, 672, 112, True, 1, 0.25, 'HS'),
+             BlockArgs(5, 1, 112, 672, 160, True, 2, 0.25, 'HS'),
+             BlockArgs(5, 1, 160, 960, 160, True, 1, 0.25, 'HS'),
+             BlockArgs(5, 1, 160, 960, 160, True, 1, 0.25, 'HS')
+            ]
+
+        self._global_params = global_params
+        self.endpoints = None
+        self._build()
+
+    def _build(self):
+        """Builds a model."""
+        self._blocks = []
+        # Builds blocks.
+        for block_args in self._blocks_args:
+            assert block_args.num_repeat > 0
+            # Update block input and output filters based on depth multiplier.
+            block_args = block_args._replace(
+                input_filters=round_filters(block_args.input_filters,
+                                            self._global_params),
+                output_filters=round_filters(block_args.output_filters,
+                                             self._global_params))
+
+            # The first block needs to take care of stride and filter size increase.
+            self._blocks.append(V3Block(block_args, self._global_params))
+            if block_args.num_repeat > 1:
+                # pylint: disable=protected-access
+                block_args = block_args._replace(
+                    input_filters=block_args.output_filters, strides=[1, 1])
+                # pylint: enable=protected-access
+            for _ in range(block_args.num_repeat - 1):
+                self._blocks.append(V3Block(block_args, self._global_params))
+
+        batch_norm_momentum = self._global_params.batch_norm_momentum
+        batch_norm_epsilon = self._global_params.batch_norm_epsilon
+        if self._global_params.data_format == 'channels_first':
+            channel_axis = 1
+        else:
+            channel_axis = -1
+
+        # Stem part.
+        self._conv_stem = tf.keras.layers.Conv2D(
+            filters=round_filters(16, self._global_params),
+            kernel_size=[3, 3],
+            strides=[2, 2],
+            kernel_initializer=conv_kernel_initializer,
+            padding='same',
+            use_bias=False)
+        self._bn0 = tf.layers.BatchNormalization(
+            axis=channel_axis,
+            momentum=batch_norm_momentum,
+            epsilon=batch_norm_epsilon,
+            fused=True)
+
+        # Head part.
+        self._conv_expand = tf.keras.layers.Conv2D(
+            filters=960,
+            kernel_size=[1, 1],
+            strides=[1, 1],
+            kernel_initializer=conv_kernel_initializer,
+            padding='same',
+            use_bias=False)
+        self._bn1 = tf.layers.BatchNormalization(
+            axis=channel_axis,
+            momentum=batch_norm_momentum,
+            epsilon=batch_norm_epsilon,
+            fused=True)
+        self._avg_pooling = tf.keras.layers.AveragePooling2D(
+            pool_size=[7, 7],
+            data_format=self._global_params.data_format)
+        self._conv_head = tf.keras.layers.Conv2D(
+            filters=1280,
+            kernel_size=[1, 1],
+            strides=[1, 1],
+            kernel_initializer=conv_kernel_initializer,
+            padding='same',
+            use_bias=False)
+        self._final = tf.keras.layers.Conv2D(
+            filters=self._global_params.num_classes,
+            kernel_size=[1, 1],
+            strides=[1, 1],
+            kernel_initializer=conv_kernel_initializer,
+            padding='same',
+            use_bias=False)
+
+        if self._global_params.dropout_rate > 0:
+            self._dropout = tf.keras.layers.Dropout(
+                self._global_params.dropout_rate)
+        else:
+            self._dropout = None
+
+    def call(self, inputs, training=True):
+        """Implementation of MobileNetV3 call().
+        Args:
+            inputs: input tensors.
+            training: boolean, whether the model is constructed for training.
+        Returns:
+            output tensors.
+        """
+        outputs = None
+        self.endpoints = {}
+        # Calls Stem layers
+        with tf.variable_scope('v3_stem'):
+            outputs = hardSwish(
+                self._bn0(self._conv_stem(inputs), training=training))
+        tf.logging.info('Built stem layers with output shape: %s' %
+                        outputs.shape)
+        self.endpoints['stem'] = outputs
+        # Calls blocks.
+        for idx, block in enumerate(self._blocks):
+            with tf.variable_scope('v3_blocks_%s' % idx):
+                outputs = block.call(outputs, training=training)
+                self.endpoints['block_%s' % idx] = outputs
+                if block.endpoints:
+                    for k, v in block.endpoints.items():
+                        self.endpoints['block_%s/%s' % (idx, k)] = v
+        # Calls final layers and returns logits.
+        with tf.variable_scope('v3_head'):
+            outputs = hardSwish(
+                self._bn1(self._conv_expand(outputs), training=training))
+            outputs = self._avg_pooling(outputs)
+            outputs = hardSwish(self._conv_head(outputs))
+            if self._dropout:
+                outputs = self._dropout(outputs, training=training)
+            outputs = tf.reshape(self._final(outputs), [-1, self._global_params.num_classes])
+            self.endpoints['head'] = outputs
+        return outputs

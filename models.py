@@ -44,12 +44,16 @@ def build_model(images, model_name, training, override_params=None):
         # in global_params.
         global_params = global_params._replace(**override_params)
 
-    if model_name.lower() != 'mobilenetv3small':
+    if model_name.lower() == 'mobilenetv3small':
+        with tf.variable_scope(model_name):
+            model = model_def.MobileNetV3Small(global_params)
+            logits = model(images, training=training)
+    elif model_name.lower() == 'mobilenetv3large':
+        with tf.variable_scope(model_name):
+            model = model_def.MobileNetV3Large(global_params)
+            logits = model(images, training=training)
+    else:
         raise NotImplementedError
-        
-    with tf.variable_scope(model_name):
-        model = model_def.MobileNetV3Small(global_params)
-        logits = model(images, training=training)
 
     logits = tf.identity(logits, 'logits')
     return logits, model.endpoints
