@@ -11,7 +11,7 @@ export TPU_NAME=<your TPU name>
 export MODEL_NAME=MobileNetV3Small 
 export STORAGE_BUCKET=<your imagenet bucket location>
 export DATA_DIR=${STORAGE_BUCKET}
-export OUTPUT_DIR=${STORAGE_BUCKET}/mobilenet-test2
+export OUTPUT_DIR=${STORAGE_BUCKET}/mobilenet-test
 python3 main.py --tpu=$TPU_NAME --data_dir=$DATA_DIR --model_name=$MODEL_NAME \
                 --model_dir=$OUTPUT_DIR --export_dir=$OUTPUT_DIR/export 
 ```
