@@ -9,7 +9,7 @@ You can run `main.py` as follows:
 ```
 export TPU_NAME=<your TPU name>
 export MODEL_NAME=MobileNetV3Small 
-export STORAGE_BUCKET=gs://image-net-for-single-path
+export STORAGE_BUCKET=<your imagenet bucket location>
 export DATA_DIR=${STORAGE_BUCKET}
 export OUTPUT_DIR=${STORAGE_BUCKET}/mobilenet-test2
 python3 main.py --tpu=$TPU_NAME --data_dir=$DATA_DIR --model_name=$MODEL_NAME \
