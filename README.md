@@ -1,11 +1,17 @@
 # MobileNetV3 TPU Estimator implementation
-MobileNetV3 small and large implementation using the TPU Estimator API.
+MobileNetV3 tf.keras implementation with pre-trained weights using the TPU Estimator API.
 
 ## Requirements
 I have tested this implementation using tensorflow 1.13
 
+
+## ImageNet pre-trained weights
+|         	| Top-1 Acc. 	| Top-5 Acc. 	| Path to weights: 	|
+|:-------:	|:----------:	|:----------:	|:----------------:	|
+| V3Large 	|     TBU    	|     TBU    	|        TBU       	|
+| V3Small 	|    67.3%   	|    87.4%   	|  [Google drive](https://drive.google.com/drive/folders/14yX5aO6oMuwHuUChUK_YcXHQNrbF8E6m?usp=sharing)  |
 ## Train on ImageNet
-You can run `main.py` as follows:
+Please see `main.py` for detailed information on available flags.
 ```
 export TPU_NAME=<your TPU name>
 export MODEL_NAME=MobileNetV3Small 
