@@ -23,4 +23,4 @@ python3 main.py --tpu=$TPU_NAME --data_dir=$DATA_DIR --model_name=$MODEL_NAME \
 ```
 
 ## Acknowledgement
-This repo extends the codebase of [MnasNet's TPU implementation](https://github.com/tensorflow/tpu/tree/master/models/official/mnasnet).
+This repo's implementation is built upon the codebase of [MnasNet's TPU implementation](https://github.com/tensorflow/tpu/tree/master/models/official/mnasnet) as well as that of [Single-path NAS](https://github.com/dstamoulis/single-path-nas).
