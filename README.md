@@ -8,7 +8,7 @@ I have tested this implementation using tensorflow 1.13
 ## ImageNet pre-trained weights
 |         	| Top-1 Acc. 	| Top-5 Acc. 	| Path to weights: 	|
 |:-------:	|:----------:	|:----------:	|:----------------:	|
-| V3Large 	|     TBU    	|     TBU    	|        TBU       	|
+| V3Large 	|    75.0%   	|    92.0%   	|  [Google drive](https://drive.google.com/drive/folders/1SuH_lqazrqqRBClBaIZ8BPPf4JSJgjvt?usp=sharing)  |
 | V3Small 	|    67.3%   	|    87.4%   	|  [Google drive](https://drive.google.com/drive/folders/14yX5aO6oMuwHuUChUK_YcXHQNrbF8E6m?usp=sharing)  |
 ## Train on ImageNet
 Please see `main.py` for detailed information on available flags.
